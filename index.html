@@ -1,0 +1,218 @@
+import React, { useState, useEffect } from "react";
+
+export default function KiteAIQuiz() {
+  const initialQuestions = [
+    {
+      id: 1,
+      q: "What is Kite AI?",
+      options: [
+        "A code completion and developer assistant tool",
+        "An email marketing platform",
+        "A cloud storage provider",
+        "A social media app"
+      ],
+      answer: 0,
+      explanation:
+        "Kite AI is a developer-focused tool that provides code completion and documentation suggestions to make programming faster and easier."
+    },
+    {
+      id: 2,
+      q: "How does Kite AI typically help developers?",
+      options: [
+        "By providing real-time code completions and documentation",
+        "By offering graphic design templates",
+        "By video encoding",
+        "By monitoring network traffic"
+      ],
+      answer: 0,
+      explanation:
+        "Kite assists developers with smart suggestions and inline documentation that improve productivity."
+    },
+    {
+      id: 3,
+      q: "Who uses Kite AI?",
+      options: [
+        "Programmers and developers",
+        "Graphic designers",
+        "Economists",
+        "Pilots"
+      ],
+      answer: 0,
+      explanation: "Kite is primarily designed for software developers of all skill levels."
+    },
+    {
+      id: 4,
+      q: "Kite’s suggestions are based on what?",
+      options: [
+        "Local code context and machine learning models",
+        "Weather reports",
+        "Movie ratings",
+        "Bank interest rates"
+      ],
+      answer: 0,
+      explanation:
+        "Kite uses the current code context and ML models to provide relevant completions."
+    },
+    {
+      id: 5,
+      q: "What should you check regarding privacy while using Kite AI?",
+      options: [
+        "Whether code is sent to remote servers or processed locally",
+        "The app’s color scheme",
+        "The app size in MB",
+        "Whether the app shows ads"
+      ],
+      answer: 0,
+      explanation:
+        "Privacy concerns require checking if your code is uploaded or kept local; some tools offer local-only models."
+    }
+  ];
+
+  const [questions] = useState(initialQuestions);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeUp, setTimeUp] = useState(false);
+
+  // Timer effect with beep
+  useEffect(() => {
+    if (completed || timeUp) return;
+    if (timeLeft === 0) {
+      setTimeUp(true);
+      return;
+    }
+    if (timeLeft <= 5) {
+      // beep sound
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+      oscillator.connect(audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    }
+    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft, completed, timeUp]);
+
+  function selectOption(idx) {
+    if (showAnswer || timeUp) return;
+    setSelected(idx);
+  }
+
+  function submitAnswer() {
+    if (selected === null || timeUp) return;
+    const correct = questions[currentIndex].answer === selected;
+    if (correct) setScore((s) => s + 1);
+    setShowAnswer(true);
+  }
+
+  function nextQuestion() {
+    const next = currentIndex + 1;
+    setSelected(null);
+    setShowAnswer(false);
+    if (next >= questions.length) {
+      setCompleted(true);
+    } else {
+      setCurrentIndex(next);
+    }
+  }
+
+  function restart() {
+    setCurrentIndex(0);
+    setSelected(null);
+    setScore(0);
+    setShowAnswer(false);
+    setCompleted(false);
+    setTimeLeft(30);
+    setTimeUp(false);
+  }
+
+  const q = questions[currentIndex];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 p-6">
+      <div className="max-w-3xl w-full p-6 bg-white rounded-2xl shadow-2xl">
+        <h1 className="text-2xl font-semibold mb-4 text-center">Kite AI Quiz</h1>
+
+        {!completed ? (
+          <div>
+            <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
+              <span>Question {currentIndex + 1} of {questions.length}</span>
+              <span className={`font-semibold ${timeLeft <= 5 ? 'text-red-600' : ''}`}>
+                ⏱️ {timeLeft}s
+              </span>
+            </div>
+
+            {timeUp ? (
+              <div className="p-4 bg-red-100 border border-red-300 rounded-lg text-center space-y-3">
+                <strong>Time Up!</strong> ⏰ Please restart the quiz.
+                <div>
+                  <button
+                    onClick={restart}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white"
+                  >
+                    Restart Quiz
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 border rounded-lg mb-4">
+                <div className="font-medium mb-2">{q.q}</div>
+                <div className="space-y-2">
+                  {q.options.map((opt, i) => {
+                    const isSelected = selected === i;
+                    const isCorrect = q.answer === i;
+                    const showCorrectMark = showAnswer && isCorrect;
+                    const wrongAndSelected = showAnswer && isSelected && !isCorrect;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => selectOption(i)}
+                        className={`w-full text-left p-3 rounded-lg border flex justify-between items-center ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200"} ${showCorrectMark ? "ring-2 ring-green-300" : ""} ${wrongAndSelected ? "ring-2 ring-red-300 bg-red-50" : ""}`}
+                      >
+                        <span>{opt}</span>
+                        {showCorrectMark && <span className="text-sm font-semibold">✓</span>}
+                        {wrongAndSelected && <span className="text-sm font-semibold">✕</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!showAnswer && !timeUp ? (
+              <div className="flex gap-2">
+                <button onClick={submitAnswer} className="px-4 py-2 rounded-lg bg-blue-600 text-white">Submit</button>
+                <button onClick={() => setSelected(null)} className="px-4 py-2 rounded-lg border">Clear</button>
+              </div>
+            ) : (
+              !timeUp && (
+                <div>
+                  <div className="mb-3 p-3 bg-gray-50 rounded">{q.explanation}</div>
+                  <div className="flex gap-2">
+                    <button onClick={nextQuestion} className="px-4 py-2 rounded-lg bg-indigo-600 text-white">Next</button>
+                    <button onClick={restart} className="px-4 py-2 rounded-lg border">Restart</button>
+                  </div>
+                </div>
+              )
+            )}
+
+            <div className="mt-4 text-sm text-gray-600">Score: {score}</div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Quiz Complete!</h2>
+            <p className="mb-4">Your score: <span className="font-bold">{score} / {questions.length}</span></p>
+            <div className="space-x-2">
+              <button onClick={restart} className="px-4 py-2 rounded-lg bg-green-600 text-white">Restart Quiz</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
